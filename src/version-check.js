@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 function getLocalVersion() {
   const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
   return pkg.version;
-}
+}//chk
 
 async function getLatestVersion() {
   const response = await fetch('https://registry.npmjs.org/ereemby-cli/latest', {
