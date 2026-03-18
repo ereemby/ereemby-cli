@@ -1,6 +1,6 @@
 {
   "name": "ereemby-cli",
-  "version": "1.0.23",
+  "version": "1.0.24",
   "description": "CLI para personalizar seu site Ereemby - pull e push de codigo Liquid, JS e CSS",
   "main": "bin/index.js",
   "bin": {
