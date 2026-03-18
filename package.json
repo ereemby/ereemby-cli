@@ -1,0 +1,45 @@
+{
+  "name": "ereemby-cli",
+  "version": "1.0.20",
+  "description": "CLI para personalizar seu site Ereemby - pull e push de codigo Liquid, JS e CSS",
+  "main": "bin/index.js",
+  "bin": {
+    "ereemby": "bin/index.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "node bin/index.js"
+  },
+  "keywords": [
+    "ereemby",
+    "cli",
+    "liquid",
+    "customization",
+    "theme",
+    "ecommerce"
+  ],
+  "author": "Ereemby",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ereemby/ereemby-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ereemby/ereemby-cli/issues"
+  },
+  "homepage": "https://ereemby.app",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "figlet": "^1.11.0",
+    "ora": "^8.0.0"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
