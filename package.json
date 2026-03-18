@@ -31,7 +31,7 @@
   "bugs": {
     "url": "https://github.com/ereemby/ereemby-cli/issues"
   },
-  "homepage": "https://ereemby.app",
+  "homepage": "https://ereemby.com",
   "dependencies": {
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
