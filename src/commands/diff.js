@@ -3,8 +3,8 @@ import ora from 'ora';
 import { createHash } from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { fetchFiles } from '../api.js';
-import { getHashes, hasHashes } from '../config.js';
+import { fetchFiles, fetchFileContent } from '../api.js';
+import { hasHashes } from '../config.js';
 
 export async function diffCommand() {
   if (!hasHashes()) {
@@ -12,13 +12,11 @@ export async function diffCommand() {
     process.exitCode = 1; return;
   }
 
-  const hashes = getHashes();
-
-  const spinner = ora('Comparando arquivos...').start();
+  const spinner = ora('Buscando arquivos do tema...').start();
 
   try {
     const { files } = await fetchFiles();
-    spinner.stop();
+    spinner.text = `Comparando ${files.length} arquivo(s)...`;
 
     const changed = [];
     const missing = [];
@@ -31,14 +29,19 @@ export async function diffCommand() {
         continue;
       }
 
-      const content = readFileSync(localPath, 'utf-8');
-      const currentHash = createHash('md5').update(content).digest('hex');
-      const originalHash = hashes[file.directory];
+      const localContent = readFileSync(localPath, 'utf-8');
+      const localHash = createHash('md5').update(localContent).digest('hex');
 
-      if (!originalHash || currentHash !== originalHash) {
+      const data = await fetchFileContent(file.id);
+      const remoteContent = data.content || '';
+      const remoteHash = createHash('md5').update(remoteContent).digest('hex');
+
+      if (localHash !== remoteHash) {
         changed.push(file.directory);
       }
     }
+
+    spinner.stop();
 
     if (changed.length === 0 && missing.length === 0) {
       console.log(chalk.green('Nenhuma alteracao encontrada.\n'));
