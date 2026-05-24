@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import ora from 'ora';
-import { saveConfig } from '../config.js';
+import { saveConfig, getConfig } from '../config.js';
 import { fetchFiles } from '../api.js';
 
 export async function loginCommand(token) {
@@ -9,6 +9,7 @@ export async function loginCommand(token) {
     process.exitCode = 1; return;
   }
 
+  const previous = getConfig().token;
   saveConfig({ token });
 
   const spinner = ora('Verificando token...').start();
@@ -18,7 +19,8 @@ export async function loginCommand(token) {
     spinner.stop();
     console.log(chalk.green('\n✔ Autenticado com sucesso!\n'));
   } catch (err) {
-    spinner.fail(chalk.red('Token invalido ou expirado.'));
+    saveConfig({ token: previous ?? null });
+    spinner.fail(chalk.red('Token invalido ou expirado. Token anterior mantido.'));
     process.exitCode = 1; return;
   }
 }
