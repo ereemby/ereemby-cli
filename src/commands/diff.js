@@ -3,7 +3,7 @@ import ora from 'ora';
 import { createHash } from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { fetchFiles, fetchFileContent } from '../api.js';
+import { fetchFiles } from '../api.js';
 import { getHashes, hasHashes } from '../config.js';
 
 export async function diffCommand() {
@@ -13,11 +13,11 @@ export async function diffCommand() {
   }
 
   const hashes = getHashes();
-  const spinner = ora('Buscando arquivos do tema...').start();
+  const spinner = ora('Comparando arquivos...').start();
 
   try {
     const { files } = await fetchFiles();
-    spinner.text = `Comparando arquivos...`;
+    spinner.stop();
 
     const changed = [];
     const missing = [];
@@ -32,34 +32,29 @@ export async function diffCommand() {
         continue;
       }
 
-      const localContent = readFileSync(localPath, 'utf-8');
-      const localHash = createHash('md5').update(localContent).digest('hex');
+      const content = readFileSync(localPath, 'utf-8');
+      const currentHash = createHash('md5').update(content).digest('hex');
+      const originalHash = hashes[file.directory];
 
-      const data = await fetchFileContent(file.id);
-      const remoteContent = data.content || '';
-      const remoteHash = createHash('md5').update(remoteContent).digest('hex');
-
-      if (localHash !== remoteHash) {
+      if (!originalHash || currentHash !== originalHash) {
         changed.push(file.directory);
       }
     }
 
     // arquivos rastreados localmente mas nao retornados pela API (ex: JS/CSS)
-    for (const [dir, storedHash] of Object.entries(hashes)) {
+    for (const [dir, originalHash] of Object.entries(hashes)) {
       if (remoteDirectories.has(dir)) continue;
       const localPath = join(process.cwd(), dir);
       if (!existsSync(localPath)) {
         missing.push(dir);
         continue;
       }
-      const localContent = readFileSync(localPath, 'utf-8');
-      const localHash = createHash('md5').update(localContent).digest('hex');
-      if (localHash !== storedHash) {
+      const content = readFileSync(localPath, 'utf-8');
+      const currentHash = createHash('md5').update(content).digest('hex');
+      if (currentHash !== originalHash) {
         changed.push(dir);
       }
     }
-
-    spinner.stop();
 
     if (changed.length === 0 && missing.length === 0) {
       console.log(chalk.green('Nenhuma alteracao encontrada.\n'));
