@@ -4,7 +4,7 @@ import { createHash } from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { fetchFiles, fetchFileContent } from '../api.js';
-import { hasHashes } from '../config.js';
+import { getHashes, hasHashes } from '../config.js';
 
 export async function diffCommand() {
   if (!hasHashes()) {
@@ -12,16 +12,19 @@ export async function diffCommand() {
     process.exitCode = 1; return;
   }
 
+  const hashes = getHashes();
   const spinner = ora('Buscando arquivos do tema...').start();
 
   try {
     const { files } = await fetchFiles();
-    spinner.text = `Comparando ${files.length} arquivo(s)...`;
+    spinner.text = `Comparando arquivos...`;
 
     const changed = [];
     const missing = [];
+    const remoteDirectories = new Set();
 
     for (const file of files) {
+      remoteDirectories.add(file.directory);
       const localPath = join(process.cwd(), file.directory);
 
       if (!existsSync(localPath)) {
@@ -38,6 +41,21 @@ export async function diffCommand() {
 
       if (localHash !== remoteHash) {
         changed.push(file.directory);
+      }
+    }
+
+    // arquivos rastreados localmente mas nao retornados pela API (ex: JS/CSS)
+    for (const [dir, storedHash] of Object.entries(hashes)) {
+      if (remoteDirectories.has(dir)) continue;
+      const localPath = join(process.cwd(), dir);
+      if (!existsSync(localPath)) {
+        missing.push(dir);
+        continue;
+      }
+      const localContent = readFileSync(localPath, 'utf-8');
+      const localHash = createHash('md5').update(localContent).digest('hex');
+      if (localHash !== storedHash) {
+        changed.push(dir);
       }
     }
 
