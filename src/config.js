@@ -51,8 +51,21 @@ export function getBaseUrl() {
   return readConfig().baseUrl || 'https://api.ereemby.app';
 }
 
+const LEGACY_HASHES_FILE = join(CONFIG_DIR, 'hashes.json');
+
+function getLegacyHashes() {
+  if (!existsSync(LEGACY_HASHES_FILE)) return null;
+  try {
+    return JSON.parse(readFileSync(LEGACY_HASHES_FILE, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
 export function getHashes() {
-  return getStoreEntry().hashes || {};
+  const store = getStoreEntry();
+  if (store.hashes) return store.hashes;
+  return getLegacyHashes() || {};
 }
 
 export function saveHashes(hashes) {
@@ -60,5 +73,6 @@ export function saveHashes(hashes) {
 }
 
 export function hasHashes() {
-  return !!(getStoreEntry().hashes);
+  if (getStoreEntry().hashes) return true;
+  return getLegacyHashes() !== null;
 }
