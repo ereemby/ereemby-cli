@@ -1,15 +1,29 @@
 import { getToken, getBaseUrl } from './config.js';
 
-function getHeaders() {
-  const token = getToken();
-  if (!token) {
+function getHeaders(token) {
+  const t = token ?? getToken();
+  if (!t) {
     throw new Error('Voce nao esta autenticado. Rode: ereemby login <token>');
   }
   return {
-    'x-theme-token': token,
+    'x-theme-token': t,
     'Content-Type': 'application/json',
   };
 }
+
+export async function validateToken(token) {
+  const baseUrl = getBaseUrl();
+  const response = await fetch(`${baseUrl}/api/v1/theme/files`, {
+    method: 'GET',
+    headers: getHeaders(token),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Token invalido (${response.status}): ${text}`);
+  }
+  return response.json();
+}
+
 export async function fetchFiles() {
   const baseUrl = getBaseUrl();
   const response = await fetch(`${baseUrl}/api/v1/theme/files`, {

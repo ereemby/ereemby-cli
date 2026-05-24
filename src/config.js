@@ -6,51 +6,59 @@ const CONFIG_DIR = join(homedir(), '.ereemby');
 const CONFIG_FILE = join(CONFIG_DIR, 'config.json');
 
 function ensureConfigDir() {
-  if (!existsSync(CONFIG_DIR)) {
-    mkdirSync(CONFIG_DIR, { recursive: true });
-  }
+  if (!existsSync(CONFIG_DIR)) mkdirSync(CONFIG_DIR, { recursive: true });
 }
 
-export function getConfig() {
+function readConfig() {
   ensureConfigDir();
-  if (!existsSync(CONFIG_FILE)) {
+  if (!existsSync(CONFIG_FILE)) return {};
+  try {
+    return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+  } catch {
     return {};
   }
-  const data = readFileSync(CONFIG_FILE, 'utf-8');
-  return JSON.parse(data);
 }
 
-export function saveConfig(config) {
+function writeConfig(config) {
   ensureConfigDir();
-  const existing = getConfig();
-  const merged = { ...existing, ...config };
-  writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2), 'utf-8');
-  return merged;
+  writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+function getStoreEntry() {
+  const config = readConfig();
+  return config.stores?.[process.cwd()] || {};
+}
+
+function updateStoreEntry(data) {
+  const config = readConfig();
+  if (!config.stores) config.stores = {};
+  config.stores[process.cwd()] = { ...(config.stores[process.cwd()] || {}), ...data };
+  writeConfig(config);
+}
+
+export function saveToken(token) {
+  updateStoreEntry({ token });
 }
 
 export function getToken() {
-  const config = getConfig();
-  return config.token || null;
+  const store = getStoreEntry();
+  if (store.token) return store.token;
+  // backward compat: token global antigo
+  return readConfig().token || null;
 }
 
 export function getBaseUrl() {
-  const config = getConfig();
-  return config.baseUrl || 'https://api.ereemby.app';
+  return readConfig().baseUrl || 'https://api.ereemby.app';
 }
 
-const HASHES_FILE = join(CONFIG_DIR, 'hashes.json');
-
 export function getHashes() {
-  ensureConfigDir();
-  if (!existsSync(HASHES_FILE)) return {};
-  return JSON.parse(readFileSync(HASHES_FILE, 'utf-8'));
+  return getStoreEntry().hashes || {};
 }
 
 export function saveHashes(hashes) {
-  ensureConfigDir();
-  writeFileSync(HASHES_FILE, JSON.stringify(hashes, null, 2), 'utf-8');
+  updateStoreEntry({ hashes });
 }
 
 export function hasHashes() {
-  return existsSync(HASHES_FILE);
+  return !!(getStoreEntry().hashes);
 }
