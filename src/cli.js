@@ -36,19 +36,21 @@ function showHelp() {
   console.log(chalk.dim('    5. ereemby push\n'));
 }
 
-export function run() {
+export async function run() {
+  const versionOk = await checkVersion();
+  if (!versionOk) {
+    process.exitCode = 1;
+    return;
+  }
+
+  cleanLegacyConfig();
+
   const program = new Command();
 
   program
     .name('ereemby')
     .description('CLI para personalizar seu site Ereemby')
     .version('1.0.0');
-
-  program.hook('preAction', async () => {
-    const versionOk = await checkVersion();
-    if (!versionOk) process.exit(1);
-    cleanLegacyConfig();
-  });
 
   program
     .command('login <token>')
