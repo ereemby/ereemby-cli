@@ -25,6 +25,7 @@ function showHelp() {
   console.log(`    ${chalk.cyan('pull')}               Baixar todos os arquivos do tema`);
   console.log(`    ${chalk.cyan('pull --file <path>')}  Baixar um arquivo especifico`);
   console.log(`    ${chalk.cyan('push')}               Enviar arquivos alterados para o site`);
+  console.log(`    ${chalk.cyan('push --force')}       Pular confirmacao ao apagar arquivos`);
   console.log(`    ${chalk.cyan('diff')}               Ver quais arquivos foram alterados`);
   console.log(`    ${chalk.cyan('help')}               Mostrar esta mensagem\n`);
 
@@ -66,6 +67,7 @@ export async function run() {
   program
     .command('push')
     .description('Enviar apenas arquivos alterados para o site')
+    .option('--force', 'Pular confirmacao ao apagar arquivos do tema')
     .action(pushCommand);
 
   program

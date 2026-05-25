@@ -3,6 +3,7 @@ import ora from 'ora';
 import { createHash } from 'crypto';
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
+import { createInterface } from 'readline';
 import { fetchFiles, createFile, uploadFile, deleteFile } from '../api.js';
 import { getHashes, saveHashes, hasHashes } from '../config.js';
 
@@ -21,6 +22,16 @@ function findLocalFiles(baseDir) {
   return found;
 }
 
+function askConfirm(question) {
+  return new Promise(resolve => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(question, answer => {
+      rl.close();
+      resolve(answer.trim().toLowerCase());
+    });
+  });
+}
+
 function scanDir(dirPath, baseDir, found) {
   const entries = readdirSync(dirPath);
   for (const entry of entries) {
@@ -35,7 +46,7 @@ function scanDir(dirPath, baseDir, found) {
   }
 }
 
-export async function pushCommand() {
+export async function pushCommand(options = {}) {
   if (!hasHashes()) {
     console.log(chalk.red('Nenhum tema encontrado. Rode "ereemby pull" primeiro.'));
     process.exitCode = 1; return;
@@ -83,6 +94,20 @@ export async function pushCommand() {
 
     let deleted = 0;
     if (deletedFiles.length > 0) {
+      if (!options.force) {
+        console.log(chalk.yellow(`\nOs seguintes arquivos serao apagados do tema:`));
+        for (const file of deletedFiles) {
+          console.log(chalk.red(`  - ${file.directory}`));
+        }
+        const answer = await askConfirm(
+          chalk.bold(`\nTem certeza? ${deletedFiles.length} arquivo(s) serao apagados permanentemente. [s/N] `)
+        );
+        if (answer !== 's' && answer !== 'sim') {
+          console.log(chalk.dim('Delecao cancelada. Use --force para pular esta confirmacao.'));
+          process.exitCode = 1; return;
+        }
+      }
+
       const spinnerDelete = ora(`Removendo ${deletedFiles.length} arquivo(s) deletado(s)...`).start();
       for (const file of deletedFiles) {
         spinnerDelete.text = `Removendo ${file.directory}...`;
