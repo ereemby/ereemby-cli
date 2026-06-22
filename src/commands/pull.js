@@ -64,12 +64,22 @@ export async function pullCommand(options) {
     return;
   }
 
-  // Pull completo — confirmar se ja tem arquivos locais
+  // Pull completo — perguntar como proceder se ja tem arquivos locais
+  let keepLocal = false;
   if (hasExistingThemeFiles()) {
     console.log(chalk.yellow('\n  Ja existem arquivos do tema nesta pasta.'));
-    console.log(chalk.yellow('  O pull vai sobrescrever todos os arquivos locais.\n'));
-    const answer = await askConfirmation(chalk.bold('  Digite "confirmar" para continuar: '));
-    if (answer !== 'confirmar') {
+    console.log(chalk.bold.white('\n  Como deseja continuar?\n'));
+    console.log(`    ${chalk.cyan('[1] sobrescrever')}  baixar do tema e substituir seus arquivos locais`);
+    console.log(`    ${chalk.cyan('[2] manter')}        manter seus arquivos locais e apenas vincular ao tema`);
+    console.log(chalk.dim('                      (depois use "ereemby push" para enviar seu codigo)'));
+    console.log(chalk.dim('    [Enter] cancelar\n'));
+
+    const answer = await askConfirmation(chalk.bold('  Escolha [1/2]: '));
+    if (answer === '1' || answer === 'sobrescrever') {
+      keepLocal = false;
+    } else if (answer === '2' || answer === 'manter') {
+      keepLocal = true;
+    } else {
       console.log(chalk.dim('\nPull cancelado.\n'));
       return;
     }
@@ -82,8 +92,9 @@ export async function pullCommand(options) {
     const { files } = await fetchFiles();
     spinner.succeed(`${files.length} arquivo(s) encontrado(s).`);
 
-    const spinnerPull = ora('Baixando arquivos...').start();
+    const spinnerPull = ora(keepLocal ? 'Vinculando ao tema...' : 'Baixando arquivos...').start();
     let downloaded = 0;
+    let kept = 0;
     const hashes = {};
 
     for (const file of files) {
@@ -91,20 +102,34 @@ export async function pullCommand(options) {
       const content = data.content || '';
       const filePath = join(process.cwd(), file.directory);
 
+      // Hash da versao remota — usado pelo push para detectar diferencas com o local
+      hashes[file.directory] = createHash('md5').update(content).digest('hex');
+
+      // Modo "manter": nao sobrescreve arquivos que ja existem localmente
+      if (keepLocal && existsSync(filePath)) {
+        kept++;
+        spinnerPull.text = `Vinculando ao tema... (${downloaded + kept}/${files.length})`;
+        continue;
+      }
+
       mkdirSync(dirname(filePath), { recursive: true });
       writeFileSync(filePath, content, 'utf-8');
 
-      hashes[file.directory] = createHash('md5').update(content).digest('hex');
-
       downloaded++;
-      spinnerPull.text = `Baixando arquivos... (${downloaded}/${files.length})`;
+      spinnerPull.text = keepLocal
+        ? `Vinculando ao tema... (${downloaded + kept}/${files.length})`
+        : `Baixando arquivos... (${downloaded}/${files.length})`;
     }
-
-    spinnerPull.succeed(chalk.green(`${downloaded} arquivo(s) baixado(s) com sucesso!`));
 
     saveHashes(hashes);
 
-    console.log(chalk.bold.green('\nPull concluido! Edite os arquivos e use "ereemby push" para enviar.\n'));
+    if (keepLocal) {
+      spinnerPull.succeed(chalk.green(`Vinculado ao tema! ${kept} arquivo(s) local(is) mantido(s), ${downloaded} baixado(s).`));
+      console.log(chalk.bold.green('\nSeus arquivos locais foram preservados. Use "ereemby push" para enviar seu codigo ao tema.\n'));
+    } else {
+      spinnerPull.succeed(chalk.green(`${downloaded} arquivo(s) baixado(s) com sucesso!`));
+      console.log(chalk.bold.green('\nPull concluido! Edite os arquivos e use "ereemby push" para enviar.\n'));
+    }
 
   } catch (err) {
     spinner.stop();

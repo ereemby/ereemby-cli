@@ -23,6 +23,7 @@ function showHelp() {
   console.log(chalk.bold.white('  Comandos:\n'));
   console.log(`    ${chalk.cyan('login <token>')}       Autenticar com o token do tema`);
   console.log(`    ${chalk.cyan('pull')}               Baixar todos os arquivos do tema`);
+  console.log(chalk.dim('                       (se ja houver arquivos: [1] sobrescrever ou [2] manter locais)'));
   console.log(`    ${chalk.cyan('pull --file <path>')}  Baixar um arquivo especifico`);
   console.log(`    ${chalk.cyan('push')}               Enviar arquivos alterados para o site`);
   console.log(`    ${chalk.cyan('push --force')}       Pular confirmacao ao apagar arquivos`);
